@@ -4,9 +4,13 @@
   "description": "NotFlex — REST API для каталога фильмов и сериалов",
   "type": "module",
   "main": "src/server.js",
-  "scripts": {
+    "scripts": {
     "dev": "node --watch --env-file=.env src/server.js",
-    "start": "node --env-file=.env src/server.js"
+    "start": "node --env-file=.env src/server.js",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:seed": "node --env-file=.env prisma/seed.js",
+    "db:studio": "prisma studio"
   },
   "keywords": [],
   "author": "",

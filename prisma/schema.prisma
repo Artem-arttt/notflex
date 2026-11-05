@@ -1,0 +1,97 @@
+// NotFlex — схема базы данных (Prisma ORM + PostgreSQL)
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------- Перечисления ----------
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum TitleType {
+  MOVIE
+  SERIES
+}
+
+// ---------- Модели ----------
+
+model User {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  name         String
+  passwordHash String
+  role         Role     @default(USER)
+  createdAt    DateTime @default(now())
+
+  ratings Rating[]
+
+  @@map("users")
+}
+
+model Director {
+  id   Int    @id @default(autoincrement())
+  name String
+
+  titles Title[]
+
+  @@map("directors")
+}
+
+model Genre {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+
+  titles Title[]
+
+  @@map("genres")
+}
+
+// Основная сущность: и фильмы, и сериалы (различаются полем type)
+model Title {
+  id          Int       @id @default(autoincrement())
+  name        String
+  type        TitleType
+  description String?
+  releaseYear Int
+  durationMin Int? // длительность фильма, минут
+  seasons     Int? // количество сезонов сериала
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  directorId Int?
+  director   Director? @relation(fields: [directorId], references: [id], onDelete: SetNull)
+
+  genres  Genre[] // связь многие-ко-многим (таблица _GenreToTitle создаётся автоматически)
+  ratings Rating[]
+
+  @@index([type])
+  @@index([releaseYear])
+  @@index([directorId])
+  @@map("titles")
+}
+
+model Rating {
+  id        Int      @id @default(autoincrement())
+  value     Int // 1..10, диапазон проверяется в валидации
+  comment   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId  Int
+  user    User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  titleId Int
+  title   Title @relation(fields: [titleId], references: [id], onDelete: Cascade)
+
+  // один пользователь — одна оценка одного тайтла
+  @@unique([userId, titleId])
+  @@index([titleId])
+  @@map("ratings")
+}
