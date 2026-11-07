@@ -87,3 +87,260 @@ Authorization: Bearer {{userToken}}
 ### Список пользователей: admin -> 200
 GET {{baseUrl}}/users
 Authorization: Bearer {{adminToken}}
+
+### ===== ТАЙТЛЫ: ЧТЕНИЕ (доступно всем) =====
+
+### Список тайтлов (по умолчанию: страница 1, 10 штук)
+GET {{baseUrl}}/titles
+
+### Пагинация: страница 2, по 4 штуки
+GET {{baseUrl}}/titles?page=2&limit=4
+
+### Фильтр: только сериалы
+GET {{baseUrl}}/titles?type=SERIES
+
+### Фильтр по жанру (1 = Драма), сортировка по названию, по убыванию
+GET {{baseUrl}}/titles?genreId=1&sort=name&order=desc
+
+### Фильтр по режиссёру (2 = Кристофер Нолан)
+GET {{baseUrl}}/titles?directorId=2
+
+### Фильтр по году выпуска
+GET {{baseUrl}}/titles?year=1994
+
+### Поиск по названию (Шер -> Шерлок)
+GET {{baseUrl}}/titles?search=%D0%A8%D0%B5%D1%80
+
+### Неверные параметры -> 400
+GET {{baseUrl}}/titles?limit=500&type=BOOK&page=0
+
+### Один тайтл с режиссёром, жанрами и средней оценкой (Prisma include)
+GET {{baseUrl}}/titles/2
+
+### Тайтл не найден -> 404
+GET {{baseUrl}}/titles/9999
+
+### Неверный id -> 400
+GET {{baseUrl}}/titles/abc
+
+### ===== ТАЙТЛЫ: ИЗМЕНЕНИЕ (только admin) =====
+
+### Создание без токена -> 401
+POST {{baseUrl}}/titles
+Content-Type: application/json
+
+{
+  "name": "Дюна",
+  "type": "MOVIE",
+  "releaseYear": 2021
+}
+
+### Создание с токеном user -> 403
+POST {{baseUrl}}/titles
+Authorization: Bearer {{userToken}}
+Content-Type: application/json
+
+{
+  "name": "Дюна",
+  "type": "MOVIE",
+  "releaseYear": 2021
+}
+
+### Создание с токеном admin -> 201
+# @name createTitle
+POST {{baseUrl}}/titles
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Дюна",
+  "type": "MOVIE",
+  "releaseYear": 2021,
+  "durationMin": 155,
+  "description": "Наследник дома Атрейдес отправляется на пустынную планету Арракис.",
+  "directorId": 2,
+  "genreIds": [3, 6]
+}
+
+###
+@newTitleId = {{createTitle.response.body.$.data.id}}
+
+### Создание: неверные данные -> 400
+POST {{baseUrl}}/titles
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "",
+  "type": "BOOK",
+  "releaseYear": "abc"
+}
+
+### Создание: у фильма не может быть сезонов -> 400
+POST {{baseUrl}}/titles
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Ошибка",
+  "type": "MOVIE",
+  "releaseYear": 2020,
+  "seasons": 3
+}
+
+### Создание: несуществующий режиссёр -> 400
+POST {{baseUrl}}/titles
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Ошибка",
+  "type": "MOVIE",
+  "releaseYear": 2020,
+  "directorId": 999
+}
+
+### Изменение с токеном admin -> 200
+PATCH {{baseUrl}}/titles/{{newTitleId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Дюна: Часть первая",
+  "genreIds": [3]
+}
+
+### Изменение: пустое тело -> 400
+PATCH {{baseUrl}}/titles/{{newTitleId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{}
+
+### Изменение с токеном user -> 403
+PATCH {{baseUrl}}/titles/{{newTitleId}}
+Authorization: Bearer {{userToken}}
+Content-Type: application/json
+
+{
+  "name": "Взлом"
+}
+
+### Изменение несуществующего -> 404
+PATCH {{baseUrl}}/titles/9999
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Нет такого"
+}
+
+### Удаление с токеном user -> 403
+DELETE {{baseUrl}}/titles/{{newTitleId}}
+Authorization: Bearer {{userToken}}
+
+### Удаление с токеном admin -> 200
+DELETE {{baseUrl}}/titles/{{newTitleId}}
+Authorization: Bearer {{adminToken}}
+
+### Повторное удаление -> 404
+DELETE {{baseUrl}}/titles/{{newTitleId}}
+Authorization: Bearer {{adminToken}}
+
+### ===== ЖАНРЫ =====
+
+### Список жанров (с количеством тайтлов)
+GET {{baseUrl}}/genres
+
+### Жанр со списком его тайтлов (3 = Фантастика)
+GET {{baseUrl}}/genres/3
+
+### Создание жанра: user -> 403
+POST {{baseUrl}}/genres
+Authorization: Bearer {{userToken}}
+Content-Type: application/json
+
+{
+  "name": "Мюзикл"
+}
+
+### Создание жанра: admin -> 201
+# @name createGenre
+POST {{baseUrl}}/genres
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Мюзикл"
+}
+
+###
+@newGenreId = {{createGenre.response.body.$.data.id}}
+
+### Создание жанра: такое название уже есть -> 409
+POST {{baseUrl}}/genres
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Мюзикл"
+}
+
+### Изменение жанра: admin -> 200
+PATCH {{baseUrl}}/genres/{{newGenreId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Мюзикл и музыка"
+}
+
+### Удаление жанра: admin -> 200
+DELETE {{baseUrl}}/genres/{{newGenreId}}
+Authorization: Bearer {{adminToken}}
+
+### ===== РЕЖИССЁРЫ =====
+
+### Список режиссёров (с количеством тайтлов)
+GET {{baseUrl}}/directors
+
+### Режиссёр со списком его тайтлов (2 = Кристофер Нолан)
+GET {{baseUrl}}/directors/2
+
+### Режиссёр не найден -> 404
+GET {{baseUrl}}/directors/999
+
+### Создание режиссёра: user -> 403
+POST {{baseUrl}}/directors
+Authorization: Bearer {{userToken}}
+Content-Type: application/json
+
+{
+  "name": "Дени Вильнёв"
+}
+
+### Создание режиссёра: admin -> 201
+# @name createDirector
+POST {{baseUrl}}/directors
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Дени Вильнёв"
+}
+
+###
+@newDirectorId = {{createDirector.response.body.$.data.id}}
+
+### Изменение режиссёра: admin -> 200
+PATCH {{baseUrl}}/directors/{{newDirectorId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Дени Вильнёв (реж.)"
+}
+
+### Удаление режиссёра: admin -> 200
+DELETE {{baseUrl}}/directors/{{newDirectorId}}
+Authorization: Bearer {{adminToken}}

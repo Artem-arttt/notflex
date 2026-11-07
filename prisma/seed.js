@@ -54,11 +54,9 @@ async function upsertUser({ email, name, password }, role) {
 }
 
 async function main() {
-  // Каталог пересоздаём с нуля, чтобы seed можно было запускать повторно
-  await prisma.rating.deleteMany();
-  await prisma.title.deleteMany();
-  await prisma.genre.deleteMany();
-  await prisma.director.deleteMany();
+  // Каталог пересоздаём с нуля, чтобы seed можно было запускать повторно.
+  // RESTART IDENTITY сбрасывает нумерацию id, пользователи не затрагиваются.
+  await prisma.$executeRaw`TRUNCATE TABLE "ratings", "titles", "genres", "directors" RESTART IDENTITY CASCADE`;
 
   const admin = await upsertUser(ADMIN, 'ADMIN');
   const user = await upsertUser(USER, 'USER');
