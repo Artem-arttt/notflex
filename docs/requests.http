@@ -1,0 +1,89 @@
+@baseUrl = http://localhost:3000/api
+
+### Проверка сервера
+GET {{baseUrl}}/health
+
+### ===== АУТЕНТИФИКАЦИЯ =====
+
+### Регистрация (поле role игнорируется, будет USER)
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "student@example.com",
+  "name": "Студент",
+  "password": "Pass1234",
+  "role": "ADMIN"
+}
+
+### Регистрация: email уже занят -> 409
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "user@notflex.local",
+  "name": "Дубликат",
+  "password": "Pass1234"
+}
+
+### Регистрация: неверные данные -> 400
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "not-an-email",
+  "name": "A",
+  "password": "123"
+}
+
+### Вход как обычный пользователь
+# @name loginUser
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "user@notflex.local",
+  "password": "User1234!"
+}
+
+###
+@userToken = {{loginUser.response.body.$.accessToken}}
+
+### Вход как администратор
+# @name loginAdmin
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@notflex.local",
+  "password": "Admin123!"
+}
+
+###
+@adminToken = {{loginAdmin.response.body.$.accessToken}}
+
+### Вход: неверный пароль -> 401
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "user@notflex.local",
+  "password": "wrong-password"
+}
+
+### ===== ПРОВЕРКА ПРАВ =====
+
+### Профиль без токена -> 401
+GET {{baseUrl}}/auth/me
+
+### Профиль с токеном user -> 200
+GET {{baseUrl}}/auth/me
+Authorization: Bearer {{userToken}}
+
+### Список пользователей: user -> 403
+GET {{baseUrl}}/users
+Authorization: Bearer {{userToken}}
+
+### Список пользователей: admin -> 200
+GET {{baseUrl}}/users
+Authorization: Bearer {{adminToken}}

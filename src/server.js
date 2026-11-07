@@ -1,7 +1,6 @@
+import { env } from './config/env.js';
 import app from './app.js';
 
-const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, () => {
-  console.log(`NotFlex API запущен: http://localhost:${PORT}`);
+app.listen(env.port, () => {
+  console.log(`NotFlex API запущен: http://localhost:${env.port}`);
 });
