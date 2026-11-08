@@ -2,6 +2,7 @@ import { Router } from 'express';
 import authRoutes from './auth.routes.js';
 import directorsRoutes from './directors.routes.js';
 import genresRoutes from './genres.routes.js';
+import ratingsRoutes from './ratings.routes.js';
 import titlesRoutes from './titles.routes.js';
 import usersRoutes from './users.routes.js';
 
@@ -16,5 +17,6 @@ router.use('/users', usersRoutes);
 router.use('/titles', titlesRoutes);
 router.use('/genres', genresRoutes);
 router.use('/directors', directorsRoutes);
+router.use('/ratings', ratingsRoutes);
 
 export default router;

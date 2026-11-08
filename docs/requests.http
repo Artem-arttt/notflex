@@ -344,3 +344,181 @@ Content-Type: application/json
 ### Удаление режиссёра: admin -> 200
 DELETE {{baseUrl}}/directors/{{newDirectorId}}
 Authorization: Bearer {{adminToken}}
+
+### ===== ОЦЕНКИ =====
+
+### Оценки тайтла (с именами авторов)
+GET {{baseUrl}}/titles/1/ratings
+
+### Оценки тайтла: пагинация
+GET {{baseUrl}}/titles/1/ratings?limit=1&page=2
+
+### Оценки несуществующего тайтла -> 404
+GET {{baseUrl}}/titles/9999/ratings
+
+### Поставить оценку без токена -> 401
+POST {{baseUrl}}/titles/3/ratings
+Content-Type: application/json
+
+{
+  "value": 8
+}
+
+### Поставить оценку: значение вне диапазона -> 400
+POST {{baseUrl}}/titles/3/ratings
+Authorization: Bearer {{userToken}}
+Content-Type: application/json
+
+{
+  "value": 11
+}
+
+### Поставить оценку несуществующему тайтлу -> 404
+POST {{baseUrl}}/titles/9999/ratings
+Authorization: Bearer {{userToken}}
+Content-Type: application/json
+
+{
+  "value": 8
+}
+
+### Поставить оценку: user -> 201
+### (userId и titleId в теле игнорируются, автор берётся из токена)
+# @name createRating
+POST {{baseUrl}}/titles/3/ratings
+Authorization: Bearer {{userToken}}
+Content-Type: application/json
+
+{
+  "value": 9,
+  "comment": "Космос!",
+  "userId": 1,
+  "titleId": 5
+}
+
+###
+@newRatingId = {{createRating.response.body.$.data.id}}
+
+### Повторная оценка того же тайтла -> 409
+POST {{baseUrl}}/titles/3/ratings
+Authorization: Bearer {{userToken}}
+Content-Type: application/json
+
+{
+  "value": 5
+}
+
+### Мои оценки вместе с тайтлами -> 200
+GET {{baseUrl}}/ratings/my
+Authorization: Bearer {{userToken}}
+
+### Мои оценки без токена -> 401
+GET {{baseUrl}}/ratings/my
+
+### Изменить свою оценку -> 200
+PATCH {{baseUrl}}/ratings/{{createRating.response.body.$.data.id}}
+Authorization: Bearer {{userToken}}
+Content-Type: application/json
+
+{
+  "value": 10
+}
+
+### Изменить пустым телом -> 400
+PATCH {{baseUrl}}/ratings/{{createRating.response.body.$.data.id}}
+Authorization: Bearer {{userToken}}
+Content-Type: application/json
+
+{}
+
+### Изменить ЧУЖУЮ оценку (admin правит оценку user) -> 403
+PATCH {{baseUrl}}/ratings/{{createRating.response.body.$.data.id}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "value": 1
+}
+
+### Удалить ЧУЖУЮ оценку (user удаляет оценку admin, id 4) -> 403
+DELETE {{baseUrl}}/ratings/4
+Authorization: Bearer {{userToken}}
+
+### Тайтл со средней оценкой
+GET {{baseUrl}}/titles/3
+
+### Удалить оценку: admin может удалить любую -> 200
+DELETE {{baseUrl}}/ratings/{{createRating.response.body.$.data.id}}
+Authorization: Bearer {{adminToken}}
+
+### Повторное удаление -> 404
+DELETE {{baseUrl}}/ratings/{{createRating.response.body.$.data.id}}
+Authorization: Bearer {{adminToken}}
+
+### ===== РОЛИ ПОЛЬЗОВАТЕЛЕЙ (только admin) =====
+
+###
+@userId = {{loginUser.response.body.$.user.id}}
+
+### Смена роли: user пытается назначить роль -> 403
+PATCH {{baseUrl}}/users/{{userId}}/role
+Authorization: Bearer {{userToken}}
+Content-Type: application/json
+
+{
+  "role": "ADMIN"
+}
+
+### Смена роли: неверное значение -> 400
+PATCH {{baseUrl}}/users/{{userId}}/role
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "role": "SUPER"
+}
+
+### Смена роли: администратор меняет собственную роль -> 400
+PATCH {{baseUrl}}/users/1/role
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "role": "USER"
+}
+
+### Смена роли: пользователь не найден -> 404
+PATCH {{baseUrl}}/users/9999/role
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "role": "USER"
+}
+
+### Назначить пользователя администратором -> 200
+PATCH {{baseUrl}}/users/{{userId}}/role
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "role": "ADMIN"
+}
+
+### Тот же токен user теперь открывает список пользователей -> 200
+### (роль берётся из базы, поэтому новый вход не нужен)
+GET {{baseUrl}}/users
+Authorization: Bearer {{userToken}}
+
+### ОБЯЗАТЕЛЬНО вернуть роль USER обратно -> 200
+PATCH {{baseUrl}}/users/{{userId}}/role
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "role": "USER"
+}
+
+### После возврата роли список пользователей снова закрыт -> 403
+GET {{baseUrl}}/users
+Authorization: Bearer {{userToken}}
