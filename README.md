@@ -146,7 +146,7 @@ erDiagram
 ### 1. Клонирование и зависимости
 
 ```bash
-git clone https://github.com/<ваш-логин>/notflex.git
+git clone https://github.com/Artem-arttt/notflex.git
 cd notflex
 npm install
 ```
